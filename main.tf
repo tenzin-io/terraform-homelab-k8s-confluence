@@ -117,6 +117,6 @@ data "template_file" "confluence_values" {
     postgresql_secret_name       = local.postgresql_secret_name
     postgresql_database_username = var.postgresql_database_username
     postgresql_database_name     = var.postgresql_database_name
-    postgresql_service_name      = "confluence-postgresql"
+    postgresql_service_name      = helm_release.postgresql.metadata.0.name
   }
 }
