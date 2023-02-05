@@ -1,6 +1,6 @@
 
 locals {
-  namespace               = "atlassian-system"
+  namespace               = "atlassian"
   license_key_secret_name = "confluence-license-secret"
   postgresql_secret_name  = "postgresql-secret-name"
 }
@@ -16,14 +16,14 @@ variable "external_domain_name" {
   description = "The external domain name to add to host names"
 }
 
-resource "kubernetes_namespace_v1" "atlassian_namespace" {
+resource "kubernetes_namespace_v1" "atlassian" {
   metadata {
     name = local.namespace
   }
 }
 
 resource "kubernetes_secret_v1" "confluence_license_secret" {
-  depends_on = [kubernetes_namespace_v1.atlassian_namespace]
+  depends_on = [kubernetes_namespace_v1.atlassian]
   metadata {
     name      = local.license_key_secret_name
     namespace = local.namespace
@@ -62,7 +62,7 @@ variable "postgresql_replication_password" {
 }
 
 resource "kubernetes_secret_v1" "postgresql_auth_secret" {
-  depends_on = [kubernetes_namespace_v1.atlassian_namespace]
+  depends_on = [kubernetes_namespace_v1.atlassian]
   metadata {
     name      = local.postgresql_secret_name
     namespace = local.namespace
@@ -77,12 +77,12 @@ resource "kubernetes_secret_v1" "postgresql_auth_secret" {
 }
 
 
-resource "helm_release" "confluence_postgresql" {
-  depends_on = [kubernetes_secret_v1.postgresql_auth_secret, kubernetes_namespace_v1.atlassian_namespace]
+resource "helm_release" "postgresql" {
+  depends_on = [kubernetes_secret_v1.postgresql_auth_secret, kubernetes_namespace_v1.atlassian]
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "postgresql"
   version    = "12.1.6"
-  name       = "confluence-postgresql"
+  name       = "postgresql-database"
   namespace  = local.namespace
   values     = [data.template_file.postgresql_values.rendered]
 
@@ -98,7 +98,7 @@ data "template_file" "postgresql_values" {
 }
 
 resource "helm_release" "confluence" {
-  depends_on = [helm_release.confluence_postgresql, kubernetes_namespace_v1.atlassian_namespace, kubernetes_secret_v1.confluence_license_secret]
+  depends_on = [helm_release.postgresql, kubernetes_namespace_v1.atlassian, kubernetes_secret_v1.confluence_license_secret]
   repository = "https://atlassian.github.io/data-center-helm-charts"
   version    = "1.8.1"
   chart      = "confluence"
